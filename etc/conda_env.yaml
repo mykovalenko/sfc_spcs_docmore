@@ -1,0 +1,19 @@
+name: streamlit
+channels:
+  - https://repo.anaconda.com/pkgs/snowflake
+  - nodefaults
+dependencies:
+  - python=3.11
+  - snowflake
+  - snowflake-connector-python
+  - snowflake-snowpark-python
+  - pyarrow
+  - pandas
+  - numpy
+  - cachetools
+  - pip
+  - pip:
+    - datetime
+    - langchain-community
+    - ollama
+    - streamlit

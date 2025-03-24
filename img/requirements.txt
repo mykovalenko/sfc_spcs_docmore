@@ -1,0 +1,11 @@
+cachetools
+datetime
+pyarrow
+pandas
+numpy
+snowflake
+snowflake-connector-python
+snowflake-snowpark-python
+streamlit
+langchain-community
+ollama
