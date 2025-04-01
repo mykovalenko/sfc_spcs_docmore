@@ -53,7 +53,7 @@ openssl rsa -in ${CONFDIR}/deployusr_rsa_key.p8 -pubout -out ${CONFDIR}/deployus
 
 pk=$(cat ${CONFDIR}/deployusr_rsa_key.pub | grep -v 'PUBLIC KEY'  | tr -d '\n')
 p8=$(cat ${CONFDIR}/deployusr_rsa_key.p8  | grep -v 'PRIVATE KEY' | tr -d '\n')
-echo "USE ROLE ACCOUNTADMIN; ALTER USER ${DEPNAME}_USR SET RSA_PUBLIC_KEY='${pk}';" >${BASEDIR}/dbs/setkey.sql
+echo "USE ROLE ACCOUNTADMIN; ALTER USER APP_${DEPNAME}_USER SET RSA_PUBLIC_KEY='${pk}';" >${BASEDIR}/dbs/setkey.sql
 
 sed -i "s|&{ depname }|${DEPNAME}|g" ${BASEDIR}/Makefile
 sed -i "s|&{ dbsname }|${DBSNAME}|g" ${BASEDIR}/Makefile

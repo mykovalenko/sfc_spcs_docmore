@@ -1,7 +1,7 @@
 spec:
   containers:
-    - name: dep-&{ depname }
-      image: &{ accname }.registry.snowflakecomputing.com/&{ dbsname }/&{ depname }/images/dep-&{ depname }:latest
+    - name: app-&{ depname }
+      image: &{ accname }.registry.snowflakecomputing.com/&{ dbsname }/&{ depname }/images/app-&{ depname }:latest
       resources:
         requests:
           nvidia.com/gpu: 1
@@ -13,7 +13,7 @@ spec:
         - name: models-stage
           mountPath: /root/.ollama/models/
   endpoints:
-    - name: dep-&{ depname }
+    - name: app-&{ depname }
       port: 8501
       public: true
   volumes:
@@ -26,6 +26,6 @@ spec:
       uid: 1000
       gid: 1000
 serviceRoles:
-  - name: &{ depname }_RAX
+  - name: APP_&{ depname }_AXSROLE
     endpoints:
-    - dep-&{ depname }
+    - app-&{ depname }

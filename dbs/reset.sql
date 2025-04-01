@@ -1,14 +1,14 @@
 SET TARGET_DATABASE   = '<% dbsname %>';
 SET DEPLOY_SCHEMA     = '<% depname %>';
-SET DEPLOY_ROLE_OWNER = '<% depname %>_ROL';
-SET APP_ROLE_TYPE_01  = '<% depname %>_R01';
-SET APP_ROLE_TYPE_02  = '<% depname %>_R02';
-SET SERVICE_NAME      = '<% depname %>_SVC';
-SET SERVICE_RUN_USER  = '<% depname %>_USR';
-SET SERVICE_RUN_POOL  = '<% depname %>_CPL';
-SET SERVICE_RUN_VWHS  = '<% depname %>_VWH';
-SET EXT_ACC_INT_NAME  = '<% depname %>_EAI';
-SET EXT_ACC_NET_RULE  = '<% depname %>_NRL';
+SET DEPLOY_ROLE_OWNER = 'APP_<% depname %>_OWNER';
+SET APP_ROLE_TYPE_01  = 'APP_<% depname %>_ROL01';
+SET APP_ROLE_TYPE_02  = 'APP_<% depname %>_ROL02';
+SET SERVICE_NAME      = 'APP_<% depname %>_SVC';
+SET SERVICE_RUN_USER  = 'APP_<% depname %>_USER';
+SET SERVICE_RUN_POOL  = 'APP_<% depname %>_POOL';
+SET SERVICE_RUN_VWHS  = 'APP_<% depname %>_WH';
+SET EXT_ACC_INT_NAME  = 'APP_<% depname %>_EXASINT';
+SET EXT_ACC_NET_RULE  = 'APP_<% depname %>_NETRULE';
 
 
 ---------------------------------------------------------------------------------
@@ -20,6 +20,7 @@ USE SCHEMA IDENTIFIER($DEPLOY_SCHEMA);
 
 DROP USER IF EXISTS IDENTIFIER($SERVICE_RUN_USER);
 DROP ROLE IF EXISTS IDENTIFIER($DEPLOY_ROLE_OWNER);
+DROP ROLE IF EXISTS IDENTIFIER($APP_ROLE_TYPE_01);
 
 ALTER SERVICE IF EXISTS IDENTIFIER($SERVICE_NAME) SUSPEND;
 DROP SERVICE IF EXISTS IDENTIFIER($SERVICE_NAME);
