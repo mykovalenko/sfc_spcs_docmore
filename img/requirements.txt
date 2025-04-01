@@ -6,6 +6,7 @@ numpy
 snowflake
 snowflake-connector-python
 snowflake-snowpark-python
+snowflake-ml-python
 streamlit
 langchain-community
 ollama

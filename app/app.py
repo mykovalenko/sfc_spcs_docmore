@@ -5,6 +5,7 @@ import streamlit as st
 import snowflake.connector
 from snowflake.snowpark import Session, FileOperation
 from snowflake.snowpark import functions as f
+from snowflake.cortex import Complete
 from langchain_community.llms import Ollama
 import ollama as ol
 import helpers
@@ -63,16 +64,37 @@ def create_prompt( myquestion, rag ):
 
 @st.cache_data
 def complete(myquestion, model, rag, esp):
-
     prompt, url_link, relative_path = create_prompt(myquestion, rag)
+    placeholder = c2.empty()
+    full_response = ''
+
+    stream = Complete(
+        model = model,
+        prompt = prompt,
+        session = session,
+        stream = True
+    )
+
+    for update in stream:
+        placeholder.markdown(update)
+        full_response += update
+
+
+    if rag == 1:
+        display_url = f"Link to [{relative_path}]({url_link}) that may be useful"
+        c2.markdown(display_url)
+
+'''    
     qry = f"""
         SELECT
             SNOWFLAKE.CORTEX.COMPLETE('{model}',{prompt}) AS RESPONSE, 
             SNOWFLAKE.CORTEX.TRANSLATE(RESPONSE, '', 'es') AS RESPONSE_ES
     """
-    
+   
     df_response = session.sql(qry).collect()
     return df_response[0].RESPONSE_ES if esp == 1 else df_response[0].RESPONSE, url_link, relative_path
+'''
+    return full_response, url_link, relative_path
 
 
 
@@ -247,7 +269,7 @@ with c2_c2:
 if question:
     if model_serving == "Ollama":
         df_response, url_link, relative_path = complete_ol( question, 1 if rag else 0 )
+        display_response( df_response, url_link, relative_path )
     else:
         df_response, url_link, relative_path = complete( question, model, 1 if rag else 0, 1 if esp else 0 ) 
 
-    display_response( df_response, url_link, relative_path )
