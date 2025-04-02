@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import streamlit as st
 import snowflake.connector
-import snowflake.cortex
+from snowflake.cortex
 from snowflake.snowpark import Session, FileOperation
 from snowflake.snowpark import functions as f
 from langchain_community.llms import Ollama
