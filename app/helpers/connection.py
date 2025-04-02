@@ -20,7 +20,7 @@ def base_conf():
         'schema': os.getenv('SNOWFLAKE_SCHEMA'),
         'role':  os.getenv('SNOWFLAKE_ROLE'),
         'client_session_keep_alive': True,
-        'session_parameters': {'QUERY_TAG': 'APP:RTAnalyst',}
+        'session_parameters': {'QUERY_TAG': 'APP:Cortexan',}
     }
 
 def get_environ_creds():
@@ -64,7 +64,7 @@ def get_snowcli_creds():
         creds = {
             'connection_name': os.getenv('SNOWCLI_CONNECTION_NAME'),
             'client_session_keep_alive': True,
-            'session_parameters': {'QUERY_TAG': 'APP:RTAnalyst',}
+            'session_parameters': {'QUERY_TAG': 'APP:Cortexan',}
         }
 
         return creds

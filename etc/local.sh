@@ -1,4 +1,5 @@
 #!/bin/bash
 eval "$(conda shell.bash hook)"
 conda activate streamlit
-./main.sh local
+export SNOWCLI_CONNECTION_NAME="mkazwe001_docmore"
+../img/main.sh local
