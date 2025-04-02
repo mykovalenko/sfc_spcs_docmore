@@ -3,27 +3,37 @@ import datetime
 import pandas as pd
 import streamlit as st
 import snowflake.connector
-from snowflake.cortex
+from snowflake.cortex import Complete, Translate
 from snowflake.snowpark import Session, FileOperation
 from snowflake.snowpark import functions as f
-from langchain_community.llms import Ollama
-from langchain.callbacks.manager import CallbackManagerForLLMRun
 import ollama as ol
 import helpers
 
+
+
+
 # Get User from SPCS Headers
 try:
-    user = st.context.headers["Sf-Context-Current-User"] or Visitor
+    user = st.context.headers["Sf-Context-Current-User"] or 'Visitor'
 except KeyError:
-    user = "Visitor"
+    user = 'Visitor'
+
+st.set_page_config(page_title = f'DocMore [{user}]', page_icon = ':green_book:', layout = 'wide')
+#https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
+#https://ollama.com/blog/python-javascript-libraries
+
+
+
 
 # Make connection to Snowflake and cache it
 @st.cache_resource
 def connect_to_snowflake():
     return helpers.session()
 
-#https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
-st.set_page_config(page_title = f'DocMore [{user}]', page_icon = ':green_book:', layout = 'wide')
+
+
+session = connect_to_snowflake()
+
 
 
 
@@ -43,19 +53,12 @@ def create_prompt( myquestion, rag ):
         prompt_context = df_context._get_value(0,'CHUNK_TEXT').replace("'", "")
         relative_path =  df_context._get_value(0,'RELATIVE_PATH')
     
-        prompt = f"""
-            'Answer the question based on the context.
-            Context: {prompt_context}
-            Question: {myquestion}'
-        """
+        prompt = f"""{myquestion}? Build the answer using the following context: {prompt_context}"""
         qry = f"SELECT GET_PRESIGNED_URL(@INBOX, '{relative_path}', 360) as URL_LINK FROM DIRECTORY(@INBOX)"
         url_link = session.sql(qry).to_pandas()._get_value(0,'URL_LINK')
 
     else:
-        prompt = f"""
-            'Question: {myquestion} 
-            Answer: '
-        """
+        prompt = myquestion
         url_link = "None"
         relative_path = "None"
         
@@ -63,20 +66,46 @@ def create_prompt( myquestion, rag ):
 
 
 
-def complete(question, model, placeholder, rag, esp_in, esp_out):
-    my_question = question
-    if esp_in == 1:
-        my_question = snowflake.cortex.translate(
-            text = question,
-            from_language = '',
-            to_language = 'es',
-            session = session
-        )
-    
-    my_prompt, url_link, relative_path = create_prompt(my_question, rag)
-    stream = snowflake.cortex.complete(
+
+def make_complete(question, model, placeholder, rag, esp_in, esp_out):
+    if question != '':
+        my_question = question
+        if esp_in == 1:
+            my_question = Translate(
+                text = question,
+                from_language = '',
+                to_language = 'es',
+                session = session
+            )
+        
+        prompt, url_link, relative_path = create_prompt( my_question, rag )
+
+        full_response = ''
+        if model_serving == "Ollama":
+            full_response = complete_ollama( prompt, model, placeholder )
+        else:
+            full_response = complete_cortex( prompt, model, placeholder ) 
+
+        if rag == 1:
+            display_url = f"Link to [{relative_path}]({url_link}) that may be useful"
+            c2.markdown(display_url)
+
+        if esp_out == 1:
+            full_response = Translate(
+                text = full_response,
+                from_language = '',
+                to_language = 'es',
+                session = session
+            )
+            placeholder.markdown(full_response)
+
+
+
+
+def complete_cortex(prompt, model, placeholder):
+    stream = Complete(
         model = model,
-        prompt = my_prompt,
+        prompt = prompt,
         session = session,
         stream = True
     )
@@ -86,100 +115,34 @@ def complete(question, model, placeholder, rag, esp_in, esp_out):
         ctx_response += update
         placeholder.markdown(ctx_response)
 
-    if rag == 1:
-        display_url = f"Link to [{relative_path}]({url_link}) that may be useful"
-        c2.markdown(display_url)
-
-    if esp_out == 1:
-        ctx_response = snowflake.cortex.translate(
-            text = ctx_response,
-            from_language = '',
-            to_language = 'es',
-            session = session
-        )
-        placeholder.markdown(ctx_response)
+    return ctx_response
 
 
 
-def complete_ol(question, placeholder, rag, esp_in, esp_out):
-    my_question = question
-    if esp_in == 1:
-        my_question = snowflake.cortex.translate(
-            text = question,
-            from_language = '',
-            to_language = 'es',
-            session = session
-        )
-    
-    my_prompt, url_link, relative_path = create_prompt(my_question, rag)
-    
-    run_manager = CallbackManagerForLLMRun()
-    stream = ollama._stream(my_prompt, run_manager=run_manager)
+
+def complete_ollama(prompt, model, placeholder):
+    stream = ol.chat(
+        model = model,
+        messages = [{
+            'role': 'user',
+            'content': prompt,
+        }],
+        stream = True
+    )
     
     ol_response = ''
     for update in stream:
-        ol_response += update
+        ol_response += update['message']['content']
         placeholder.markdown(ol_response)
 
-    if rag == 1:
-        display_url = f"Link to [{relative_path}]({url_link}) that may be useful"
-        c2.markdown(display_url)
-
-    if esp_out == 1:
-        ol_response = snowflake.cortex.translate(
-            text = ol_response,
-            from_language = '',
-            to_language = 'es',
-            session = session
-        )
-        placeholder.markdown(ol_response)
+    return ol_response
 
 
 
-def display_response (response, url_link, relative_path):
-    full_response = ''
-    placeholder = c2.empty()
-    for char in response:
-        full_response += char
-        placeholder.markdown(full_response)
-        time.sleep(0.01)
-
-    if rag == 1:
-        display_url = f"Link to [{relative_path}]({url_link}) that may be useful"
-        c2.markdown(display_url)
-
-
-
-def display_response_ol (question, rag):
-    response, url_link, relative_path = complete_ol(question, rag)
-
-    c2.markdown( response[0].RESPONSE_ES if esp == 1 else response[0].RESPONSE )
-    
-    if rag == 1:
-        display_url = f"Link to [{relative_path}]({url_link}) that may be useful"
-        c2.markdown(display_url)
-
-
-
-def change_label_style(label, font_size='12px', font_color='black', font_family='sans-serif'):
-    html = f"""
-    <script>
-        var elems = window.parent.document.querySelectorAll('p');
-        var elem = Array.from(elems).find(x => x.innerText == '{label}');
-        elem.style.fontSize = '{font_size}';
-        elem.style.color = '{font_color}';
-        elem.style.fontFamily = '{font_family}';
-    </script>
-    """
-    st.components.v1.html(html)
-
-
-
-session = connect_to_snowflake()
-
-inbox_stage='INBOX'
 
 with st.sidebar:
+    inbox_stage='INBOX'
+
     st.sidebar.title(f"DocMore v1.0")
     st.header(f"", divider='rainbow')
 
@@ -226,8 +189,8 @@ with st.sidebar:
     #st.caption(f" Connected as [{user}]")
     current_role = session.create_dataframe([1]).select(snowflake.snowpark.functions.current_role()).collect()[0]['CURRENT_ROLE()']
     st.markdown(f"<div style='text-align: center; color: grey;'> Role [{current_role}]</div>", unsafe_allow_html=True)
-    
-    
+
+
 
 
 left_co,gap,right_co = st.columns([1,0.15,2])
@@ -245,8 +208,8 @@ model_serving = c1.radio(
 
 if model_serving != "None" and model_serving == "Cortex":
     model_list = {
-        'models': ['claude-3-5-sonnet','gemma-7b','jamba-1.5-mini','jamba-instruct','mistral-7b','mixtral-8x7b','mistral-large2','reka-flash','reka-core','snowflake-arctic','llama3.1-405b','llama3.1-70b','llama3.1-8b'],
-        'command': ['claude-3-5-sonnet','gemma-7b','jamba-1.5-mini','jamba-instruct','mistral-7b','mixtral-8x7b','mistral-large2','reka-flash','reka-core','snowflake-arctic','llama3.1-405b','llama3.1-70b','llama3.1-8b']
+        'models': ['mistral-7b','mixtral-8x7b','mistral-large2','claude-3-5-sonnet','gemma-7b','jamba-1.5-mini','jamba-instruct','reka-flash','reka-core','snowflake-arctic','llama3.1-405b','llama3.1-70b','llama3.1-8b'],
+        'command': ['mistral-7b','mixtral-8x7b','mistral-large2','claude-3-5-sonnet','gemma-7b','jamba-1.5-mini','jamba-instruct','reka-flash','reka-core','snowflake-arctic','llama3.1-405b','llama3.1-70b','llama3.1-8b']
     }
 elif model_serving != "None" and model_serving == "Ollama":
     model_list = {
@@ -262,45 +225,34 @@ if model_serving == "Ollama":
     ol_avail_list = ol.list()
     ol_avail_names = []
     for m in ol_avail_list['models'] :
-        st.print(m['model'])
         ol_avail_names.append(m['model'])
 
     if len(ol_avail_names) == 0 or model not in ol_avail_names:
         c1.write("No preloaded model/s found")
 
         if c1.button("Download"):
-            # Initialize Ollama
             with st.spinner(f"Pulling Ollama[ {model} ]"):
                 ol.pull(model)
 
     else :
-        #st.markdown(f'Found preloaded models (:blue[{", ".join(ol_avail_names)}])')
         c1.caption(f'Found preloaded models ({", ".join(ol_avail_names)})')
 
-    ollama = Ollama(model=model)
 
 
-def clear_output(e):
-    e.markdown('')
 
 rag = c1.checkbox('Use Knowledge Base for context', False)
 es_in = c1.checkbox('Pregunta en Español', False)
 es_out = c1.checkbox('Inferencia en Español', False)
 
-question = c2.text_input("Prompt", placeholder="Pregunta aqui" if es_in else "Ask your question here", label_visibility="collapsed")
+question_in = c2.text_input("Prompt", placeholder="Pregunta aqui" if es_in else "Ask your question here", label_visibility="collapsed")
 
-c2_c1,c2_c2 = c2.columns([1,5])
+c2_c1,c2_c2 = c2.columns([2,4])
 
-inf_out = c2.empty()
+infer_out = c2.empty()
 
 with c2_c1:
-    st.button("Clear", on_click=clear_output(inf_out))
+    st.button("Ask", on_click=make_complete(question_in, model, infer_out, 1 if rag else 0, 1 if es_in else 0, 1 if es_out else 0))
+    #st.button("Clear", on_click=infer_out.markdown(''))
 
 with c2_c2:
     his = st.checkbox('Cargar el historico de la conversación' if es_in else 'Load my previous conversations', False)
-
-if question:
-    if model_serving == "Ollama":
-        complete_ol( question, inf_out, 1 if rag else 0, 1 if es_in else 0, 1 if es_out else 0 )
-    else:
-        complete( question, model, inf_out, 1 if rag else 0, 1 if es_in else 0, 1 if es_out else 0 ) 
