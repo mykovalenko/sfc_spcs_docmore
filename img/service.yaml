@@ -1,0 +1,31 @@
+spec:
+  containers:
+    - name: app-&{ depname }
+      image: &{ accname }.registry.snowflakecomputing.com/&{ dbsname }/&{ depname }/images/app-&{ depname }:latest
+      resources:
+        requests:
+          nvidia.com/gpu: 1
+        limits:
+          nvidia.com/gpu: 1
+      volumeMounts:
+        - name: volume-stage
+          mountPath: /opt/spcs/stage/
+        - name: models-stage
+          mountPath: /root/.ollama/models/
+  endpoints:
+    - name: app-&{ depname }
+      port: 8501
+      public: true
+  volumes:
+    - name: volume-stage
+      source: "@volumes"
+      uid: 1000
+      gid: 1000
+    - name: models-stage
+      source: "@models"
+      uid: 1000
+      gid: 1000
+serviceRoles:
+  - name: APP_&{ depname }_AXSROLE
+    endpoints:
+    - app-&{ depname }

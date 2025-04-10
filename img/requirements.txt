@@ -1,0 +1,12 @@
+cachetools
+datetime
+pyarrow
+pandas
+numpy
+snowflake >= 1.0.2
+snowflake-connector-python >= 3.14.0
+snowflake-snowpark-python >= 1.30.0
+snowflake-ml-python >= 1.6.4
+streamlit
+langchain-community
+ollama
