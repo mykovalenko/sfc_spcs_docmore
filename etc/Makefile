@@ -13,7 +13,7 @@ snow_setup: snow_reset
 	snow sql -c $(CNX_NAME) -f dbs/setup.sql -D "depname=$(DEP_NAME)" -D "dbsname=$(DBS_NAME)" > log/setup_$(TMS_EXEC).log 2>&1
 
 snow_add01: snow_setup
-	snow sql -c $(CNX_NAME) -f dbs/setkey.sql -D "appname=$(APP_NAME)" -D "dbsname=$(DBS_NAME)" > log/setkey_$(TMS_EXEC).log 2>&1
+	snow sql -c $(CNX_NAME) -f dbs/setkey.sql -D "depname=$(DEP_NAME)" -D "dbsname=$(DBS_NAME)" > log/setkey_$(TMS_EXEC).log 2>&1
 
 snow_add02: snow_add01
 	snow sql -c $(CNX_NAME) -f dbs/appmod.sql -D "depname=$(DEP_NAME)" -D "dbsname=$(DBS_NAME)" > log/appmod$(TMS_EXEC).log 2>&1
