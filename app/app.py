@@ -213,8 +213,8 @@ if model_serving != "None" and model_serving == "Cortex":
     }
 elif model_serving != "None" and model_serving == "Ollama":
     model_list = {
-        'models': ['deepseek-r1:7b', 'deepseek-r1:70b', 'deepseek-v3', 'gemma3:27b', 'llama3.3:70b', 'phi4'],
-        'command': ['deepseek-r1:7b', 'deepseek-r1:70b', 'deepseek-v3', 'gemma3:27b', 'llama3.3:70b', 'phi4']
+        'models': ['deepseek-r1:7b', 'deepseek-r1:70b', 'deepseek-v3', 'gemma3:27b', 'llama3.3:70b', 'llama3.1:405b', 'phi4:latest'],
+        'command': ['deepseek-r1:7b', 'deepseek-r1:70b', 'deepseek-v3', 'gemma3:27b', 'llama3.3:70b', 'llama3.1:405b', 'phi4:latest']
     }
 
 models_pd = pd.DataFrame(data=model_list)
